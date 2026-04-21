@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Droplet OLED Motion Variants</title>
+  <style>
+    :root {
+      --ink: #171717;
+      --muted: #596057;
+      --paper: #f7f8f6;
+      --panel: #ffffff;
+      --line: #d7ddd4;
+      --mint: #00d1c1;
+      --mint-dark: #007f76;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 30px;
+      display: grid;
+      gap: 24px;
+    }
+
+    header {
+      display: grid;
+      gap: 10px;
+      max-width: 760px;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .tile {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 12px 38px rgba(23, 23, 23, 0.08);
+    }
+
+    .screen-shell {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      background: #171717;
+      border: 1px solid #303030;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      image-rendering: pixelated;
+      background: #000;
+      border-radius: 4px;
+    }
+
+    h2 {
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--mint-dark);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--mint-dark);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      padding: 10px 14px;
+    }
+
+    button.active {
+      background: var(--mint);
+      color: #001f1d;
+    }
+
+    .note {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 760px) {
+      main {
+        padding: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Droplet motion tests</h1>
+      <p>
+        Four OLED-friendly animation directions for a cuter water pet. Each screen is drawn at 128 x 64 pixels, then scaled up with crisp pixels.
+      </p>
+      <div class="controls">
+        <button class="active" data-mode="idle">Idle</button>
+        <button data-mode="happy">Happy</button>
+        <button data-mode="thirsty">Thirsty</button>
+        <button data-mode="angry">Angry</button>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Droplet motion variants">
+      <article class="tile">
+        <div class="screen-shell">
+          <canvas width="128" height="64" data-variant="floaty"></canvas>
+        </div>
+        <h2>Floaty</h2>
+        <p class="note">Soft bobbing, big cheeks, gentle bubbles. This is the safest default idle.</p>
+      </article>
+
+      <article class="tile">
+        <div class="screen-shell">
+          <canvas width="128" height="64" data-variant="jelly"></canvas>
+        </div>
+        <h2>Jelly</h2>
+        <p class="note">More squash and stretch, like a tiny water jelly. Cutest when reacting to a sip.</p>
+      </article>
+
+      <article class="tile">
+        <div class="screen-shell">
+          <canvas width="128" height="64" data-variant="sleepy"></canvas>
+        </div>
+        <h2>Sleepy</h2>
+        <p class="note">Slow drift and drowsy face. Good for long idle periods before reminding the user.</p>
+      </article>
+
+      <article class="tile">
+        <div class="screen-shell">
+          <canvas width="128" height="64" data-variant="bounce"></canvas>
+        </div>
+        <h2>Bounce</h2>
+        <p class="note">Angry mode: it ricochets inside the screen, splashes on impact, then pulls itself together.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const canvases = [...document.querySelectorAll("canvas[data-variant]")];
+    const buttons = [...document.querySelectorAll("button[data-mode]")];
+    let mode = "idle";
+    let modeStart = performance.now();
+    const ink = "#cafffb";
+    const dim = "#70eee5";
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        mode = button.dataset.mode;
+        modeStart = performance.now();
+        buttons.forEach((item) => item.classList.toggle("active", item === button));
+      });
+    });
+
+    function rect(ctx, x, y, w = 1, h = 1, color = ink) {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    }
+
+    function label(ctx, value, x, y, color = ink) {
+      ctx.fillStyle = color;
+      ctx.font = "6px monospace";
+      ctx.textBaseline = "top";
+      ctx.fillText(value, x, y);
+    }
+
+    function clear(ctx, now) {
+      ctx.clearRect(0, 0, 128, 64);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, 128, 64);
+      ctx.strokeStyle = ink;
+      ctx.globalAlpha = 0.45 + Math.sin(now * 0.003) * 0.12;
+      ctx.strokeRect(2, 2, 124, 60);
+      ctx.globalAlpha = 1;
+    }
+
+    function face(ctx, x, y, expression, squish = 1) {
+      if (expression === "thirsty") {
+        rect(ctx, x - 10, y - 4, 6, 1);
+        rect(ctx, x + 4, y - 4, 6, 1);
+        rect(ctx, x - 5, y + 8, 10, 1);
+        rect(ctx, x - 6, y + 9, 12, 1);
+        return;
+      }
+
+      if (expression === "angry") {
+        rect(ctx, x - 11, y - 8, 7, 2);
+        rect(ctx, x + 5, y - 8, 7, 2);
+        rect(ctx, x - 10, y - 5, 4, 4);
+        rect(ctx, x + 7, y - 5, 4, 4);
+        rect(ctx, x - 4, y + 9, 8, 1);
+        rect(ctx, x - 5, y + 10, 10, 1);
+        return;
+      }
+
+      if (expression === "happy") {
+        rect(ctx, x - 11, y - 7, 2, 2);
+        rect(ctx, x - 9, y - 5, 2, 2);
+        rect(ctx, x + 9, y - 7, 2, 2);
+        rect(ctx, x + 7, y - 5, 2, 2);
+        rect(ctx, x - 6, y + 7, 2, 2);
+        rect(ctx, x - 4, y + 9, 8, 2);
+        rect(ctx, x + 4, y + 7, 2, 2);
+        return;
+      }
+
+      const blink = squish < 0.82;
+      if (blink) {
+        rect(ctx, x - 10, y - 4, 6, 1);
+        rect(ctx, x + 4, y - 4, 6, 1);
+      } else {
+        rect(ctx, x - 10, y - 7, 5, 6);
+        rect(ctx, x + 6, y - 7, 5, 6);
+      }
+      rect(ctx, x - 6, y + 8, 2, 2);
+      rect(ctx, x - 4, y + 10, 8, 1);
+      rect(ctx, x + 4, y + 8, 2, 2);
+    }
+
+    function droplet(ctx, x, y, options = {}) {
+      const stretch = options.stretch ?? 1;
+      const wide = options.wide ?? 1;
+      const color = options.color ?? ink;
+      const expression = options.expression ?? mode;
+      const inner = "#000";
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(wide, stretch);
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, -25);
+      ctx.bezierCurveTo(-17, -8, -23, 8, -16, 19);
+      ctx.bezierCurveTo(-9, 30, 10, 30, 17, 18);
+      ctx.bezierCurveTo(24, 6, 17, -9, 0, -25);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = inner;
+      ctx.beginPath();
+      ctx.moveTo(0, -17);
+      ctx.bezierCurveTo(-10, -5, -13, 7, -9, 16);
+      ctx.bezierCurveTo(-5, 24, 7, 24, 11, 16);
+      ctx.bezierCurveTo(15, 7, 10, -5, 0, -17);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+
+      face(ctx, x, y, expression, options.blinkSignal ?? 1);
+
+      if (expression === "happy") {
+        rect(ctx, x - 20, y + 3, 4, 2);
+        rect(ctx, x + 17, y + 3, 4, 2);
+      }
+    }
+
+    function bubbles(ctx, now, offset = 0) {
+      for (let i = 0; i < 5; i += 1) {
+        const x = 15 + i * 24 + Math.sin(now * 0.002 + i + offset) * 3;
+        const y = 59 - ((now * (0.004 + i * 0.0008) + i * 11 + offset * 6) % 66);
+        rect(ctx, x, y, i % 2 ? 1 : 2, i % 2 ? 1 : 2, dim);
+      }
+    }
+
+    function impactSplash(ctx, now, x, y, side) {
+      const cycle = ((now - modeStart) % 760) / 760;
+      const active = cycle < 0.28;
+      if (!active) return;
+      const spread = cycle / 0.28;
+      const dir = side === "left" ? 1 : -1;
+      const drops = [
+        [0, -5], [4, -10], [8, -2], [12, 5], [5, 11], [15, -12]
+      ];
+      drops.forEach(([dx, dy], index) => {
+        const px = x + dir * dx * spread;
+        const py = y + dy * spread + Math.sin(now * 0.02 + index) * 1.5;
+        rect(ctx, px, py, index % 2 ? 1 : 2, index % 2 ? 1 : 2, ink);
+      });
+    }
+
+    function angryPosition(now) {
+      const elapsed = (now - modeStart) * 0.001;
+      const width = 128;
+      const height = 64;
+      const left = 25;
+      const right = width - 25;
+      const top = 29;
+      const bottom = height - 25;
+      const speedX = 48;
+      const speedY = 30;
+      const spanX = right - left;
+      const spanY = bottom - top;
+      const rawX = (elapsed * speedX) % (spanX * 2);
+      const rawY = (elapsed * speedY + 18) % (spanY * 2);
+      const x = rawX < spanX ? left + rawX : right - (rawX - spanX);
+      const y = rawY < spanY ? top + rawY : bottom - (rawY - spanY);
+      const hitLeft = x < left + 3;
+      const hitRight = x > right - 3;
+      return { x, y, side: hitLeft ? "left" : hitRight ? "right" : "" };
+    }
+
+    function drawFloaty(ctx, now) {
+      clear(ctx, now);
+      bubbles(ctx, now);
+      const bob = Math.sin(now * 0.002) * 2.4;
+      const blinkSignal = Math.sin(now * 0.0013) > 0.965 ? 0.7 : 1;
+      droplet(ctx, 64 + Math.sin(now * 0.003) * 1.2, 36 + bob, {
+        expression: mode,
+        blinkSignal
+      });
+      label(ctx, mode === "happy" ? "+120ml" : mode === "thirsty" ? "low h2o" : "hi", 7, 7);
+    }
+
+    function drawJelly(ctx, now) {
+      clear(ctx, now);
+      bubbles(ctx, now, 2);
+      const pulse = Math.sin(now * 0.006);
+      const stretch = 1 + pulse * 0.07;
+      const wide = 1 - pulse * 0.05;
+      const hop = mode === "happy" ? Math.abs(Math.sin(now * 0.007)) * -5 : Math.sin(now * 0.002) * 2;
+      droplet(ctx, 64, 37 + hop, {
+        expression: mode,
+        stretch,
+        wide,
+        blinkSignal: Math.sin(now * 0.0011) > 0.96 ? 0.6 : 1
+      });
+      rect(ctx, 47, 55 + Math.sin(now * 0.004) * 1, 34, 1, dim);
+      label(ctx, mode === "happy" ? "boing!" : "jelly", 7, 7);
+    }
+
+    function drawSleepy(ctx, now) {
+      clear(ctx, now);
+      const drift = Math.sin(now * 0.0013) * 5;
+      droplet(ctx, 64 + drift, 37 + Math.sin(now * 0.0018) * 1.2, {
+        expression: mode === "idle" ? "thirsty" : mode,
+        stretch: 0.98,
+        wide: 1.02,
+        blinkSignal: 0.65
+      });
+      label(ctx, mode === "happy" ? "awake" : "z z", 8, 7, dim);
+      rect(ctx, 92 + Math.sin(now * 0.003) * 3, 18, 2, 2, dim);
+      rect(ctx, 101 + Math.sin(now * 0.002) * 2, 12, 3, 3, dim);
+      rect(ctx, 111 + Math.sin(now * 0.0018) * 2, 7, 2, 2, dim);
+    }
+
+    function drawBounce(ctx, now) {
+      clear(ctx, now);
+      if (mode === "angry") {
+        const pos = angryPosition(now);
+        const squash = pos.side ? 0.88 : 1;
+        const wide = pos.side ? 1.18 : 1;
+        droplet(ctx, pos.x, pos.y, {
+          expression: "angry",
+          stretch: squash,
+          wide
+        });
+        if (pos.side) {
+          impactSplash(ctx, now, pos.side === "left" ? 6 : 122, pos.y, pos.side);
+        }
+        label(ctx, "no water!", 7, 7);
+        return;
+      }
+
+      bubbles(ctx, now, 4);
+      const bob = Math.sin(now * 0.0022) * 2;
+      droplet(ctx, 64, 36 + bob, {
+        expression: mode,
+        blinkSignal: Math.sin(now * 0.0012) > 0.965 ? 0.6 : 1
+      });
+      label(ctx, mode === "happy" ? "+120ml" : "calm", 7, 7);
+    }
+
+    const drawers = {
+      floaty: drawFloaty,
+      jelly: drawJelly,
+      sleepy: drawSleepy,
+      bounce: drawBounce
+    };
+
+    function frame(now) {
+      canvases.forEach((canvas) => {
+        const ctx = canvas.getContext("2d");
+        drawers[canvas.dataset.variant](ctx, now);
+      });
+      requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

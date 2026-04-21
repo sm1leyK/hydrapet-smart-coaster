@@ -1,0 +1,12 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# Generated exports
+*.stl
+*.obj
+*.3mf
+*.amf
+*.off
