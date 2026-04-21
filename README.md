@@ -10,6 +10,7 @@ HydraPet Smart Coaster 是一个智能宠物饮水杯垫概念的小型硬件设
 - `hydrapet_smart_coaster_preview.html` - interactive preview page. / 交互式预览页面。
 - `droplet-oled-preview.html` - OLED droplet preview. / OLED 水滴效果预览。
 - `droplet-oled-variants.html` - OLED droplet visual variants. / OLED 水滴视觉方案变体。
+- `DEVELOPMENT_CHECKLIST.md` - development roadmap and checklist. / 开发路线与任务清单。
 
 ## Getting Started
 
